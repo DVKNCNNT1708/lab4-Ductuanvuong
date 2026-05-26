@@ -1,4 +1,5 @@
 import os
+from http import HTTPStatus
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, Optional
@@ -21,6 +22,12 @@ app = FastAPI(
         "Dockerized IoT Ingestion API aligned with the Lab 03 OpenAPI/Postman contract."
     ),
 )
+
+def status_phrase(code: int) -> str:
+    try:
+        return HTTPStatus(code).phrase
+    except ValueError:
+        return "HTTP Error"
 
 
 class SensorMetric(str, Enum):
@@ -112,13 +119,13 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     else:
         problem = build_problem(
             status_code=exc.status_code,
-            title=status.HTTP_STATUS_CODES.get(exc.status_code, "HTTP Error"),
+            title=status_phrase(exc.status_code),
             detail=str(exc.detail),
             instance=str(request.url.path),
         )
 
     problem.setdefault("status", exc.status_code)
-    problem.setdefault("title", status.HTTP_STATUS_CODES.get(exc.status_code, "HTTP Error"))
+    problem.setdefault("title", status_phrase(exc.status_code))
     problem.setdefault("type", "about:blank")
     problem.setdefault("detail", "Request failed")
     problem.setdefault("instance", str(request.url.path))
